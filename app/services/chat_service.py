@@ -1,6 +1,5 @@
 import asyncio
 import json
-import time
 from loguru import logger
 from google import genai
 from google.genai import types
@@ -9,14 +8,9 @@ from fastmcp import Client
 from app.config import settings
 from app.services.prompts import get_system_prompt
 
-# ---------------------------------------------------------------------------
-# Gemini client (direct SDK — no Langchain dependency)
-# ---------------------------------------------------------------------------
 gemini_client = genai.Client(api_key=settings.GOOGLE_API_KEY)
 
-# ---------------------------------------------------------------------------
-# FastMCP client — STDIO transport to @notionhq/notion-mcp-server
-# ---------------------------------------------------------------------------
+
 mcp_client = Client(settings.get_notion_mcp_config())
 
 
@@ -62,8 +56,6 @@ def _build_tool_declarations(tools_list: list) -> list[dict]:
 async def process_chat_message(user_query: str) -> tuple[str, dict | None]:
     """
     Processes a user chat message via the Notion MCP server + Gemini SDK.
-
-    Flow (mirrors the official MCP docs example, Gemini edition):
       1. Connect to Notion MCP server, list available tools.
       2. Build Gemini function declarations directly from MCP tool schemas.
       3. Send user query to Gemini with tool declarations attached.
@@ -74,23 +66,15 @@ async def process_chat_message(user_query: str) -> tuple[str, dict | None]:
     Returns:
         (final_answer: str, data_dict: dict | None)
     """
-    t0 = time.time()
     logger.info(f"process_chat_message — query: {user_query!r}")
 
     async with mcp_client:
-        # ------------------------------------------------------------------ #
-        # Step 1: Discover available Notion tools
-        # ------------------------------------------------------------------ #
         tools_list = await mcp_client.list_tools()
         tool_declarations = _build_tool_declarations(tools_list)
         logger.info(f"MCP tools available: {[d['name'] for d in tool_declarations]}")
 
         gemini_tools = [types.Tool(function_declarations=tool_declarations)]
         config = types.GenerateContentConfig(tools=gemini_tools)
-
-        # ------------------------------------------------------------------ #
-        # Step 2: Build initial conversation
-        # ------------------------------------------------------------------ #
         system_prompt = get_system_prompt()
         contents: list = [
             types.Content(
@@ -100,10 +84,6 @@ async def process_chat_message(user_query: str) -> tuple[str, dict | None]:
         ]
 
         collected_tool_results: list[dict] = []
-
-        # ------------------------------------------------------------------ #
-        # Step 3–4: Agentic loop — keep calling until no more function_calls
-        # ------------------------------------------------------------------ #
         while True:
             response = gemini_client.models.generate_content(
                 model=settings.GEMINI_MODEL,
@@ -111,10 +91,8 @@ async def process_chat_message(user_query: str) -> tuple[str, dict | None]:
                 config=config,
             )
 
-            # Append the model's response turn to the conversation history
             contents.append(response.candidates[0].content)
 
-            # Collect all function_call parts from this response
             function_calls = [
                 part.function_call
                 for part in response.candidates[0].content.parts
@@ -122,10 +100,8 @@ async def process_chat_message(user_query: str) -> tuple[str, dict | None]:
             ]
 
             if not function_calls:
-                # No more tool calls — model produced a final text answer
                 break
 
-            # Execute all tool calls (potentially in parallel)
             logger.info(f"Gemini requested {len(function_calls)} tool call(s): "
                         f"{[fc.name for fc in function_calls]}")
 
@@ -160,23 +136,15 @@ async def process_chat_message(user_query: str) -> tuple[str, dict | None]:
                     response={"result": tool_output},
                 )
 
-            # Run all tool calls concurrently
             function_response_parts = await asyncio.gather(
                 *[execute_tool(fc) for fc in function_calls]
             )
 
-            # Append all function responses in a single user turn
             contents.append(
                 types.Content(role="user", parts=list(function_response_parts))
             )
-
-        # ------------------------------------------------------------------ #
-        # Step 5: Extract final text answer
-        # ------------------------------------------------------------------ #
         final_answer = response.text or ""
         data_dict = {"tools_called": collected_tool_results} if collected_tool_results else None
-
-        elapsed_ms = int((time.time() - t0) * 1000)
-        logger.info(f"Completed in {elapsed_ms}ms — tools used: {len(collected_tool_results)}")
+        logger.info(f"tools used: {len(collected_tool_results)}")
 
         return final_answer, data_dict
