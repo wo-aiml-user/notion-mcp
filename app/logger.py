@@ -1,11 +1,19 @@
 from loguru import logger
 import sys
 import os
+import warnings
 
 def setup_logger(settings):
     # Create a logs directory if it doesn't exist
     LOG_DIR = "logs"
     os.makedirs(LOG_DIR, exist_ok=True)
+
+    warnings.filterwarnings(
+        "ignore",
+        message=r"datetime\.datetime\.utcnow\(\) is deprecated.*",
+        category=DeprecationWarning,
+        module=r"jose\.jwt",
+    )
 
     # Configure loguru logging
     logger.remove()  # Remove default handler
@@ -18,7 +26,7 @@ def setup_logger(settings):
 
     logger.add(
         f"{LOG_DIR}/app.log",
-        format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {file} | {line} | {message}",
+        format="{level} | {file} | {line} | {message}",
         rotation="00:00",  # Rotates every midnight
         retention="30 days",  # Keep logs for 30 days
         compression=None,  # Do not compress

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Any
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -9,7 +10,7 @@ class Settings(BaseSettings):
     # JWT configuration
     JWT_SECRET_KEY: str = "your-secret-key-here"  # Change this in production!
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
 
     # Server configuration
     HOST: str = "0.0.0.0"
@@ -23,12 +24,30 @@ class Settings(BaseSettings):
     CORS_METHODS: list = ["*"]
     CORS_HEADERS: list = ["*"]
 
+    # External APIs
+    GOOGLE_API_KEY: str = ""
+    NOTION_TOKEN: str = ""
+    NOTION_MCP_COMMAND: str = "npx"
+    NOTION_MCP_ARGS: list[str] = ["-y", "@notionhq/notion-mcp-server"]
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+
     # Environment-specific settings (for dynamic behavior)
     ENVIRONMENT: str = "development"  # Default to development
     
     class Config:
         env_file = ".env"  # Single .env file for all environments
         case_sensitive = True
+
+    def get_notion_mcp_config(self) -> dict[str, Any]:
+        return {
+            "mcpServers": {
+                "notion": {
+                    "command": self.NOTION_MCP_COMMAND,
+                    "args": self.NOTION_MCP_ARGS,
+                    "env": {"NOTION_TOKEN": self.NOTION_TOKEN},
+                }
+            }
+        }
 
 @lru_cache()
 def get_settings():

@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Request
 from starlette.exceptions import HTTPException
 from fastapi.exceptions import RequestValidationError
-from app.controller.test_controller import router as test_router
 from app.controller.auth_controller import router as auth_router
 from app.controller.chat_controller import router as chat_router
 from app.utils.response import error_response
