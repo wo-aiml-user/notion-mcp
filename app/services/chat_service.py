@@ -8,7 +8,7 @@ from fastmcp import Client
 from app.config import settings
 from app.services.prompts import get_system_prompt
 
-gemini_client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+gemini_client = genai.Client(api_key=settings.GOOGLE_API_KEY or settings.GEMINI_API_KEY)
 
 
 mcp_client = Client(settings.get_github_mcp_config())

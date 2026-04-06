@@ -5,3 +5,4 @@ pydantic-settings==2.7.1
 python-jose[cryptography]==3.3.0
 fastmcp
 google-genai
+python-dotenv

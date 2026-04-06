@@ -26,9 +26,11 @@ class Settings(BaseSettings):
 
     # External APIs
     GOOGLE_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
     GITHUB_TOKEN: str = ""
-    GITHUB_MCP_COMMAND: str = "npx"
-    GITHUB_MCP_ARGS: list[str] = ["-y", "@github/mcp-server", "--dynamic-toolsets"]
+    GITHUB_PERSONAL_ACCESS_TOKEN: str = ""
+    GITHUB_MCP_COMMAND: str = "npx.cmd"
+    GITHUB_MCP_ARGS: list[str] = ["-y", "@modelcontextprotocol/server-github"]
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # Environment-specific settings (for dynamic behavior)
@@ -37,6 +39,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"  # Single .env file for all environments
         case_sensitive = True
+        extra = "ignore"
 
     def get_github_mcp_config(self) -> dict[str, Any]:
         return {
@@ -44,7 +47,7 @@ class Settings(BaseSettings):
                 "github": {
                     "command": self.GITHUB_MCP_COMMAND,
                     "args": self.GITHUB_MCP_ARGS,
-                    "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": self.GITHUB_TOKEN},
+                    "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": self.GITHUB_PERSONAL_ACCESS_TOKEN},
                 }
             }
         }
