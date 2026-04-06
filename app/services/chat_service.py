@@ -11,7 +11,7 @@ from app.services.prompts import get_system_prompt
 gemini_client = genai.Client(api_key=settings.GOOGLE_API_KEY)
 
 
-mcp_client = Client(settings.get_notion_mcp_config())
+mcp_client = Client(settings.get_github_mcp_config())
 
 
 def _serialize_tool_result_for_model(value) -> str:
@@ -55,8 +55,8 @@ def _build_tool_declarations(tools_list: list) -> list[dict]:
 
 async def process_chat_message(user_query: str) -> tuple[str, dict | None]:
     """
-    Processes a user chat message via the Notion MCP server + Gemini SDK.
-      1. Connect to Notion MCP server, list available tools.
+    Processes a user chat message via the GitHub MCP server + Gemini SDK.
+      1. Connect to GitHub MCP server, list available tools.
       2. Build Gemini function declarations directly from MCP tool schemas.
       3. Send user query to Gemini with tool declarations attached.
       4. Loop: for every function_call in the response, execute via MCP,

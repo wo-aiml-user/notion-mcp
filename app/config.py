@@ -26,9 +26,9 @@ class Settings(BaseSettings):
 
     # External APIs
     GOOGLE_API_KEY: str = ""
-    NOTION_TOKEN: str = ""
-    NOTION_MCP_COMMAND: str = "npx"
-    NOTION_MCP_ARGS: list[str] = ["-y", "@notionhq/notion-mcp-server"]
+    GITHUB_TOKEN: str = ""
+    GITHUB_MCP_COMMAND: str = "npx"
+    GITHUB_MCP_ARGS: list[str] = ["-y", "@github/mcp-server", "--dynamic-toolsets"]
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # Environment-specific settings (for dynamic behavior)
@@ -38,13 +38,13 @@ class Settings(BaseSettings):
         env_file = ".env"  # Single .env file for all environments
         case_sensitive = True
 
-    def get_notion_mcp_config(self) -> dict[str, Any]:
+    def get_github_mcp_config(self) -> dict[str, Any]:
         return {
             "mcpServers": {
-                "notion": {
-                    "command": self.NOTION_MCP_COMMAND,
-                    "args": self.NOTION_MCP_ARGS,
-                    "env": {"NOTION_TOKEN": self.NOTION_TOKEN},
+                "github": {
+                    "command": self.GITHUB_MCP_COMMAND,
+                    "args": self.GITHUB_MCP_ARGS,
+                    "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": self.GITHUB_TOKEN},
                 }
             }
         }
